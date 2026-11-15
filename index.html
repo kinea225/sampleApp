@@ -1368,7 +1368,7 @@ function matchesLibrary(rec, deck, tags, query, field='전체'){
 const tagsOf = rec => deckTags(currentDeck(rec), sourceOf(rec));
 
 /* ── 게시물 ── */
-/** 게시물 아래쪽: 넘김 표시 · 저장 · 한 줄 설명. 보이는 버튼은 저장 하나뿐이고 나머지는 상세 메뉴에 있다.
+/** 게시물 아래쪽: 넘김 표시 · 저장 · 콘텐츠 메뉴(⋯) · 한 줄 설명. 나머지 동작은 그 콘텐츠의 ⋯ 메뉴에 있다.
     카드를 넘길 때 이 부분만 다시 그린다 */
 function postFoot(rec){
   const deck=currentDeck(rec), n=deck.cards.length, i=Math.min(pos(rec.id),n-1), m=rec.memory;
@@ -1376,7 +1376,7 @@ function postFoot(rec){
   return `
     <div class="pnav">
       <span class="dots" role="img" aria-label="${n}장 중 ${i+1}번째">${deck.cards.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('')}</span>
-      <span class="pbtns"><button class="pib" data-act="bookmark" data-id="${rec.id}" aria-pressed="${!!rec.bookmarked}" aria-label="보관함에 저장">${icon('bookmark-icon')}</button></span></div>
+      <span class="pbtns"><button class="pib" data-act="bookmark" data-id="${rec.id}" aria-pressed="${!!rec.bookmarked}" aria-label="보관함에 저장">${icon('bookmark-icon')}</button><button class="pib" data-act="more" data-id="${rec.id}" aria-label="콘텐츠 메뉴">${icon('more')}</button></span></div>
     <div class="pdesc">
       ${deck.summary?`<p class="sum">${esc(deck.summary)}</p>`:''}
       ${i===n-1&&m.state==='new'?`<div class="pend"><span>끝까지 봤어요.</span><button class="btn small" data-act="understood" data-id="${rec.id}">이해 완료</button><button class="btn ghost small" data-act="again" data-id="${rec.id}">중요 표시</button></div>`
@@ -1447,12 +1447,11 @@ function scrLibrary(){
 function viewerHtml(){
   const rec=S.decks.find(r=>r.id===ui.viewer); if (!rec) return '';
   return `<section class="viewer" role="dialog" aria-modal="true" aria-label="${esc(rec.title)}">
-    <header class="abar"><button class="ibtn" data-act="close-viewer" aria-label="보관함으로 돌아가기">${icon('left')}</button><h1>보관함</h1>
-      <button class="ibtn" data-act="menu" aria-label="상세 메뉴">${icon('more')}</button></header>
+    <header class="abar"><button class="ibtn" data-act="close-viewer" aria-label="보관함으로 돌아가기">${icon('left')}</button><h1>보관함</h1></header>
     <div class="reel">${post(rec,null)}</div></section>`;
 }
 
-/* ── 화면 5: 상세 메뉴 · 설정 (바텀 시트) ── */
+/* ── 화면 5: 상세 메뉴 (바텀 시트) — 콘텐츠마다 있는 ⋯ 는 그 콘텐츠의 동작을, 머리의 ⋯ 는 앱 설정을 연다 ── */
 function settingsHtml(){
   const choice=(k,label,opts)=>`<div class="field"><span>${label}</span><div class="chips" role="group" aria-label="${label}">${opts.map(([v,l])=>`<button class="chip tall" data-act="pref" data-k="${k}" data-v="${v}" aria-pressed="${S.prefs[k]===v}">${l}</button>`).join('')}</div></div>`;
   const waiting=S.decks.filter(r=>visOf(r)==='shared'&&syncOf(r)!=='synced').length;
@@ -1539,8 +1538,7 @@ function menuHtml(rec, wrap){
     </div>
     ${card.supplemental?`<p class="hint"><span class="supp">${gen==='claude'?'AI 보충 설명':'보충 설명 · 원문 확인 필요'}</span> ${i+1}번 카드에는 원문에 없는 설명이 들어 있어요.</p>`:''}
     ${!card.sourceRefs.length&&!simOf(deck)?`<p class="hint">${src? `${i+1}번 카드는 원문 문단과 직접 연결되지 않은 연출 카드예요.` : '연결된 원문이 없어요.'}</p>`:''}
-    ${deck.warnings.length?`<div class="banner"><span>${deck.warnings.map(esc).join('<br>')}</span></div>`:''}
-    ${app}`);
+    ${deck.warnings.length?`<div class="banner"><span>${deck.warnings.map(esc).join('<br>')}</span></div>`:''}`);
 }
 function sheetHtml(){
   const d=ui.sheet; if (!d) return '';
@@ -1608,7 +1606,7 @@ function render(){
   const tb=(k,l,ic)=>`<button class="tb" data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${icon(ic)}<span>${l}</span></button>`;
   document.getElementById('root').innerHTML=`<div class="phone">${!S.interests? scrOnboarding() : `
     <header class="abar"><h1>${ui.tab==='feed'?logo:''}${TITLE[ui.tab]}</h1>
-      <button class="ibtn" data-act="menu" aria-label="상세 메뉴">${icon('more')}</button></header>
+      <button class="ibtn" data-act="menu" aria-label="앱 메뉴">${icon('more')}</button></header>
     ${ui.tab==='feed'? scrFeed() : scrLibrary()}
     <nav class="tbar three" aria-label="주 메뉴">${tb('feed','피드','feed')}<button class="fab" data-act="add" aria-label="자료 등록">${icon('plus')}</button>${tb('library','보관함','library')}</nav>
     ${ui.viewer?viewerHtml():''}
@@ -1696,7 +1694,8 @@ const ACT={
   'close-sheet'(){ if (ui.busy) return false; ui.sheet=null; },
   open(d){ ui.viewer=d.id; ui.idx[d.id]=0; },
   'close-viewer'(){ ui.viewer=null; },
-  menu(){ openSheet({type:'menu',id:currentId()}); return false; },
+  menu(){ openSheet({type:'menu',id:null}); return false; },
+  more(d){ openSheet({type:'menu',id:d.id}); return false; },
   settings(){ openSheet({type:'settings'}); return false; },
   go(d){ moveCard(d.id,Number(d.v)); return false; },
   bookmark(d){ const on=!S.decks.find(r=>r.id===d.id).bookmarked; update(d.id,r=>({...r,bookmarked:on})); if (!on&&ui.viewer===d.id) ui.viewer=null; say(on?'보관함에 저장했어요.':'보관함에서 뺐어요.'); },
@@ -1721,7 +1720,7 @@ const ACT={
     const id=ui.sheet.id, rec=S.decks.find(r=>r.id===id), src=sourceOf(rec), [label,opts]=REGEN[d.v];
     const r=await generateDeck(src, d.v==='auto'?{...S.prefs,preferredFormat:'auto'}:S.prefs, localPlanner, opts); pushLogs(r.logs);
     update(id, x=>markDirty(addVersion(x, r.deck, 'FULL_REGEN', label))); ui.idx[id]=0; ui.sheet=null;
-    say(`‘${label}’로 다시 구성해 v${S.decks.find(x=>x.id===id).currentVersion}로 저장했어요. 메뉴 → 수정 → 버전 기록에서 되돌릴 수 있어요.`);
+    say(`‘${label}’로 다시 구성해 v${S.decks.find(x=>x.id===id).currentVersion}로 저장했어요. ⋯ → 수정 → 버전 기록에서 되돌릴 수 있어요.`);
   },
   async 'card-type'(){ await applyCardEdit({forceType:ui.sheet.ctype}); },
   async 'card-text'(){ await applyCardEdit({manual:{title:document.getElementById('ctitle').value.trim(),body:document.getElementById('cbody').value.trim()}}); },
