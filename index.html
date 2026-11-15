@@ -306,7 +306,7 @@ body{background:#EDEDED;overflow:hidden}
 .ibtn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--accent-deep);flex:none}
 .ibtn svg{width:20px;height:20px}
 .ibtn:active,.ibtn[aria-pressed=true]{background:var(--beige)}
-.scr{flex:1;min-height:0;overflow-y:auto;padding:2px 16px 28px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.scr{flex:1;min-height:0;overflow-y:auto;padding:12px 16px 28px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .scr>*{flex:none}
 .lead{font-size:13px;color:var(--ink-2);margin-top:-6px}
 .tbar{flex:none;display:grid;grid-template-columns:1fr 1fr 68px 1fr 1fr;align-items:center;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
@@ -462,7 +462,6 @@ body{background:#EDEDED;overflow:hidden}
 .reel .pgr{width:100%}
 .reel .fwrap{width:min(100%,calc((var(--ph,720px) - 220px)*.8))}
 .reel .pdesc{min-height:76px}
-.tbar.three{grid-template-columns:1fr 68px 1fr}
 .viewer .abar h1{font-size:17px}
 .viewer .reel{overflow:hidden}
 .viewer .reel .post{border-bottom:0}
@@ -484,6 +483,26 @@ body{background:#EDEDED;overflow:hidden}
 .lmain b{font-size:14.5px;line-height:1.45}
 .lmain span{font-size:11.5px;color:var(--ink-2);line-height:1.5}
 .lmain .ltags{color:var(--ink-3)}
+/* 탐색 · 프로필 */
+.lmain .newtag{display:inline-block;margin-left:6px;vertical-align:2px}
+.sect2{font-size:12px;color:var(--ink-2);font-weight:500}
+.prof{display:flex;align-items:center;gap:14px}
+.prof .pav{width:64px;height:64px}
+.prof b{display:block;font-size:18px;line-height:1.3}
+.prof p{font-size:12px;color:var(--ink-2);line-height:1.6}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:14px}
+.stats div{text-align:center;padding:12px 0;border-left:1px solid var(--line)}
+.stats div:first-child{border-left:0}
+.stats b{display:block;font-size:18px;line-height:1.3}
+.stats span{font-size:11.5px;color:var(--ink-2)}
+.ihead{display:flex;align-items:center}
+.ihead h2{flex:1;font-size:13px}
+.ihead button{font-size:12.5px;text-decoration:underline;min-height:32px}
+.mlist.box2{border:1px solid var(--line);border-radius:14px;padding:0 14px}
+.mlist .go{width:16px;height:16px;color:var(--ink-3)}
+/* 슬라이더 */
+.slider input[type=range]{height:28px;accent-color:var(--ink)}
+.slider .desc{font-size:12px;color:var(--ink-2);margin-top:4px}
 /* 자료 등록: 처리 상태 */
 .psteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px}
 .psteps li{display:flex;align-items:center;gap:12px;min-height:50px;padding:0 14px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink-3)}
@@ -1183,9 +1202,9 @@ const store={
 function save(){ store.set(KEY, JSON.stringify(S)); }
 async function loadState(){
   try{ const raw=store.get(KEY); if (raw){ const p=JSON.parse(raw); if (p&&Array.isArray(p.decks)&&Array.isArray(p.sources)){
-    S=p; S.logs=S.logs||[]; S.decks=S.decks.map(r=>({...r,liked:!!r.liked,comments:Array.isArray(r.comments)?r.comments:[]})); S.prefs={...DEFAULT_PREFS,...S.prefs}; S.interests=Array.isArray(S.interests)&&S.interests.length? S.interests : null; S.discovery=S.discovery||'some'; return; } } }catch(e){}
+    S=p; S.logs=S.logs||[]; S.decks=S.decks.map(r=>({...r,liked:!!r.liked,comments:Array.isArray(r.comments)?r.comments:[]})); S.prefs={...DEFAULT_PREFS,...S.prefs}; S.interests=Array.isArray(S.interests)&&S.interests.length? S.interests : null; S.discovery=toDiscovery(S.discovery); return; } } }catch(e){}
   // 첫 실행: 추천 예시 콘텐츠를 넣는다. interests가 null이면 관심사 선택 화면부터 시작한다
-  S={sources:clone(SAMPLE_SOURCES),decks:[],prefs:{...DEFAULT_PREFS},interests:null,discovery:'some',logs:[]};
+  S={sources:clone(SAMPLE_SOURCES),decks:[],prefs:{...DEFAULT_PREFS},interests:null,discovery:20,logs:[]};
   const now=Date.now();
   for (const [k,[si,deck]] of BUILTIN_SAMPLES.entries()){
     const src=S.sources[si];
@@ -1252,6 +1271,8 @@ const ICONS={
   plus:'<path d="M12 5v14M5 12h14"/>', search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>',
   left:'<path d="M14.5 5.5L8 12l6.5 6.5"/>', right:'<path d="M9.5 5.5L16 12l-6.5 6.5"/>',
   more:'<path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="2.8"/>',
+  explore:'<circle cx="12" cy="12" r="8.5"/><path d="M15.2 8.8l-1.9 4.5-4.5 1.9 1.9-4.5z"/>',
+  profile:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.9-3.7 3.7-5.6 7-5.6s6.1 1.9 7 5.6"/>',
   heart:'<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.1a4.3 4.3 0 0 1 7.5 2.7C19.5 15.4 12 20 12 20z"/>',
   comment:'<path d="M4.5 6.5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H11l-4.5 3.5v-3.5a2 2 0 0 1-2-2z"/>',
   share:'<path d="M12 15V4M8 7.5L12 3.5l4 4M5 12v6.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V12"/>',
@@ -1354,7 +1375,7 @@ function renderFace(card, total, category, prevLayout){
    피드는 세로로 넘기면 다음 콘텐츠, 가로로 넘기면 같은 콘텐츠의 다음 카드다.
    apps/mobile/src/Main.tsx 와 같은 구성이다.
    ═══════════════════════════════════════════════════════════════════ */
-const ui={tab:'feed',q:'',lcat:'전체',idx:{},at:0,order:null,viewer:null,pick:[],sheet:null,snack:null,busy:false,tests:null};
+const ui={tab:'feed',q:'',lcat:'전체',eq:'',ecat:'전체',pview:'mine',idx:{},at:0,order:null,viewer:null,pick:[],sheet:null,snack:null,busy:false,tests:null};
 const fmtDate = t => { const d=new Date(t); return `${d.getMonth()+1}월 ${d.getDate()}일`; };
 const pos = id => ui.idx[id]||0;
 const GEN_LABEL={local:'자동 구성',sample:'예시 콘텐츠',fallback:'기본 구성',legacy:'이전 버전 카드',claude:'AI 구성'};
@@ -1362,19 +1383,22 @@ const REASON={INITIAL:'처음 만든 버전',PARTIAL_EDIT:'카드 한 장 수정
 const SYNC_LABEL={local:'이 기기에만 있음',pending:'공유 대기 중',synced:'서버에 공유됨',failed:'전송 실패'};
 const REGEN={count5:['5장으로 줄이기',{targetCount:5}],comic:['웹툰 비중 높이기',{formatBias:'comic'}],infographic:['인포그래픽 비중 높이기',{formatBias:'infographic'}],text:['글 중심으로',{formatBias:'text'}],auto:['기본 구성으로',{}]};
 const FEED_TAG={discovery:'새로운 분야',resurface:'다시 보기'};
-const DISCOVERY_EVERY={off:0,some:3,often:2};
+/** 새로운 분야 비중(%, 0~100, 10 단위). 이전 버전의 'off'·'some'·'often'도 읽는다 */
+const toDiscovery = v => { if (v==='off') return 0; if (v==='some') return 20; if (v==='often') return 50; const n=typeof v==='number'? v : (typeof v==='string'&&v.trim()!==''? Number(v) : NaN); return Number.isFinite(n)? Math.min(100,Math.max(0,Math.round(n/10)*10)) : 20; };
+/** 관심 분야 콘텐츠 main개 사이에 새 분야를 몇 개 끼울지. 비중이 v%가 되도록 하되 최소 1개 */
+const discoveryCount = (main, available, v) => v<=0||available<=0? 0 : v>=100? available : Math.min(available, Math.max(1, Math.round(main*v/(100-v))));
 const visOf = r => r.visibility||'private';
 const syncOf = r => r.syncState||'local';
 const simOf = deck => deck.meta&&deck.meta.simulated;
 const originLabel = (rec,deck) => simOf(deck)? '시뮬레이션 예시' : rec.origin==='sample'? '추천 예시' : '내 자료';
 const logo=`<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="7" y="4" width="20" height="24" rx="5" fill="#FFFFFF" stroke="${B}" stroke-width="1.8"/><rect x="4" y="7" width="20" height="22" rx="5" fill="#FFFFFF" stroke="${B}" stroke-width="1.8"/><path d="M9 14h10M9 19h7" stroke="${A}" stroke-width="2" stroke-linecap="round"/></svg>`;
-const TITLE={feed:'모로우',library:'보관함'};
+const TITLE={feed:'모로우',explore:'탐색',library:'보관함',profile:'프로필'};
 const emptyBox=(t,d,add)=>`<div class="empty">${logo}<b>${t}</b><span>${d}</span>${add?`<button class="btn" data-act="add">${icon('plus')}자료 등록</button>`:''}</div>`;
 
 /* ── 피드·보관함 규칙 (packages/core/src/feed.ts 와 같은 규칙. 전부 규칙 기반이다) ── */
-/** 1) 다시 볼 차례인 콘텐츠를 맨 앞에 2) 내 자료와 관심 분야 추천을 번갈아 3) 새 분야를 드문드문 4) 이미 이해한 것은 맨 뒤 */
+/** 1) 다시 볼 차례인 콘텐츠를 맨 앞에 2) 내 자료와 관심 분야 추천을 번갈아 3) 새 분야를 비중만큼 고르게 4) 이미 이해한 것은 맨 뒤 */
 function buildFeed(decks, interests, opts={}){
-  const now=opts.now||Date.now(), every=DISCOVERY_EVERY[opts.discovery||'some'], liked=new Set(interests);
+  const now=opts.now||Date.now(), share=toDiscovery(opts.discovery==null? 20 : opts.discovery), liked=new Set(interests);
   const newest=(a,b)=>b.createdAt-a.createdAt;
   const pool=decks.filter(d=>d.status!=='ARCHIVED');
   const reasonOf=d=>d.origin==='mine'?'mine':liked.has(d.category)?'interest':'discovery';
@@ -1387,9 +1411,9 @@ function buildFeed(decks, interests, opts={}){
   for (let i=0;i<Math.max(mine.length,interest.length);i++){ if (mine[i]) main.push({rec:mine[i],reason:'mine'}); if (interest[i]) main.push({rec:interest[i],reason:'interest'}); }
   const out=resurface.map(rec=>({rec,reason:'resurface'}));
   if (!main.length) out.push(...discovery.map(rec=>({rec,reason:'discovery'})));
-  else { let d=0;
-    main.forEach((item,i)=>{ out.push(item); if (every&&(i+1)%every===0&&discovery[d]) out.push({rec:discovery[d++],reason:'discovery'}); });
-    if (every&&d===0&&discovery[0]) out.push({rec:discovery[0],reason:'discovery'}); }
+  else { // 고르게 섞기: s번째 자리까지 새 분야가 floor((s+1)·L/T)개가 되도록
+    const L=discoveryCount(main.length,discovery.length,share), T=main.length+L; let m=0, d=0;
+    for (let k=0;k<T;k++){ if (d<L&&Math.floor((k+1)*L/T)>d) out.push({rec:discovery[d++],reason:'discovery'}); else out.push(main[m++]); } }
   out.push(...seen.map(rec=>({rec,reason:reasonOf(rec)})));
   return out;
 }
@@ -1449,7 +1473,7 @@ function scrOnboarding(){
     <div class="onb-top">${logo}<h1>어떤 분야가 궁금한가요?</h1>
       <p>여러 개를 고를 수 있어요. 고른 분야를 중심으로 피드를 만들고, 가끔 새로운 분야도 보여 드려요.</p></div>
     <div class="chips big" role="group" aria-label="관심 분야">${CATEGORIES.map(c=>`<button class="chip xl" data-act="pick" data-v="${c}" aria-pressed="${ui.pick.includes(c)}">${c}</button>`).join('')}</div>
-    <div class="onb-bot"><p class="hint">${ui.pick.length? `${ui.pick.length}개 선택함. 나중에 메뉴 → 설정에서 바꿀 수 있어요.` : '하나 이상 골라 주세요.'}</p>
+    <div class="onb-bot"><p class="hint">${ui.pick.length? `${ui.pick.length}개 선택함. 나중에 프로필 → 설정에서 바꿀 수 있어요.` : '하나 이상 골라 주세요.'}</p>
       <button class="btn" data-act="start" ${ui.pick.length?'':'disabled'}>시작하기</button></div></main>`;
 }
 /* ── 화면 2: 메인 피드 ── */
@@ -1463,42 +1487,85 @@ function scrFeed(){
   if (!items.length) return `<main class="scr" id="scr">${emptyBox('아직 볼 콘텐츠가 없어요','자료를 등록하면 카드로 만들어 드려요.',true)}</main>`;
   return `<main class="reel" id="reel" aria-label="피드. 위아래로 넘기면 다음 콘텐츠, 좌우로 넘기면 다음 카드">${items.map(o=>post(o.rec,o.reason)).join('')}</main>`;
 }
-/* ── 화면 4: 보관함 · 검색 ── */
+/* ── 콘텐츠 목록 줄 (보관함 · 탐색 · 프로필 공용) ── */
+function rowsHtml(list, interests){
+  return `<div class="llist">${list.map(rec=>{ const deck=currentDeck(rec), fresh=interests&&rec.origin!=='mine'&&!interests.includes(rec.category);
+    return `<div class="lrow"><button class="lmain" data-act="open" data-id="${rec.id}" aria-label="${esc(deck.title)} 열기">
+      <b>${esc(deck.title)}${fresh?'<span class="tag due newtag">새로운 분야</span>':''}</b><span>${esc(rec.category)} · ${originLabel(rec,deck)} · ${deck.cards.length}장${isDue(rec)?' · 다시 볼 차례':''}${rec.liked?' · 좋아요':''}${rec.comments.length?` · 댓글 ${rec.comments.length}`:''}</span>
+      <span class="ltags">${tagsOf(rec).map(t=>`#${esc(t)}`).join(' ')}</span></button>
+      <button class="pib" data-act="bookmark" data-id="${rec.id}" aria-pressed="${!!rec.bookmarked}" aria-label="${rec.bookmarked?'저장 해제':'보관함에 저장'}">${icon('bookmark-icon')}</button></div>`; }).join('')}</div>`;
+}
+const fieldChips=(act,fields,cur)=>`<div class="hscroll" role="group" aria-label="분야">${['전체',...fields].map(c=>`<button class="chip" data-act="${act}" data-v="${c}" aria-pressed="${cur===c}">${c}</button>`).join('')}</div>`;
+
+/* ── 탐색: 관심 분야 밖까지 모든 콘텐츠를 분야별로 둘러보고 찾는다 ── */
+function exploreList(){
+  const all=S.decks.filter(r=>r.status!=='ARCHIVED').sort((a,b)=>b.createdAt-a.createdAt);
+  const list=all.filter(r=>matchesLibrary(r,currentDeck(r),tagsOf(r),ui.eq,ui.ecat));
+  if (!list.length) return emptyBox('찾는 콘텐츠가 없어요','다른 낱말로 찾아보거나 분야를 바꿔 보세요.',false);
+  const outside=list.filter(r=>r.origin!=='mine'&&!S.interests.includes(r.category)), inside=list.filter(r=>!outside.includes(r));
+  if (ui.eq.trim()||ui.ecat!=='전체') return `<p class="hint" aria-live="polite">${list.length}개</p>${rowsHtml(list,S.interests)}`;
+  return `${outside.length?`<h2 class="sect2">새로운 분야 · 관심 분야 밖</h2>${rowsHtml(outside,S.interests)}`:''}${inside.length?`<h2 class="sect2">관심 분야 · 내 자료</h2>${rowsHtml(inside,S.interests)}`:''}`;
+}
+function scrExplore(){
+  const fields=CATEGORIES.filter(c=>S.decks.some(r=>r.status!=='ARCHIVED'&&r.category===c));
+  if (ui.ecat!=='전체'&&!fields.includes(ui.ecat)) ui.ecat='전체';
+  return `<main class="scr" id="scr">
+    <label class="search">${icon('search')}<span class="sr">콘텐츠 검색</span><input id="eq" type="search" placeholder="모든 콘텐츠에서 제목 · 태그 · 분야로 찾기" value="${esc(ui.eq)}" autocomplete="off"></label>
+    ${fieldChips('ecat',fields,ui.ecat)}
+    <div id="elist" class="col" style="gap:10px">${exploreList()}</div></main>`;
+}
+
+/* ── 보관함 · 검색 ── */
 function libraryList(){
   const saved=S.decks.filter(r=>r.bookmarked);
   if (!saved.length) return emptyBox('저장한 콘텐츠가 없어요','피드에서 카드 아래 책갈피를 누르면 여기에 모여요.',false);
   const list=saved.filter(r=>matchesLibrary(r,currentDeck(r),tagsOf(r),ui.q,ui.lcat));
   if (!list.length) return emptyBox('찾는 콘텐츠가 없어요','다른 낱말로 찾아보거나 분야를 바꿔 보세요.',false);
-  return `<p class="hint" aria-live="polite">${list.length}개</p><div class="llist">${list.map(rec=>{ const deck=currentDeck(rec);
-    return `<div class="lrow"><button class="lmain" data-act="open" data-id="${rec.id}" aria-label="${esc(deck.title)} 열기">
-      <b>${esc(deck.title)}</b><span>${esc(rec.category)} · ${originLabel(rec,deck)} · ${deck.cards.length}장${isDue(rec)?' · 다시 볼 차례':''}</span>
-      <span class="ltags">${tagsOf(rec).map(t=>`#${esc(t)}`).join(' ')}</span></button>
-      <button class="pib" data-act="bookmark" data-id="${rec.id}" aria-pressed="true" aria-label="저장 해제">${icon('bookmark-icon')}</button></div>`; }).join('')}</div>`;
+  return `<p class="hint" aria-live="polite">${list.length}개</p>${rowsHtml(list)}`;
 }
 function scrLibrary(){
   const fields=[...new Set(S.decks.filter(r=>r.bookmarked).map(r=>r.category))];
   if (ui.lcat!=='전체'&&!fields.includes(ui.lcat)) ui.lcat='전체';
   return `<main class="scr" id="scr">
     <label class="search">${icon('search')}<span class="sr">보관함 검색</span><input id="q" type="search" placeholder="제목 · 태그 · 분야로 찾기" value="${esc(ui.q)}" autocomplete="off"></label>
-    ${fields.length>1?`<div class="hscroll" role="group" aria-label="분야">${['전체',...fields].map(c=>`<button class="chip" data-act="lcat" data-v="${c}" aria-pressed="${ui.lcat===c}">${c}</button>`).join('')}</div>`:''}
+    ${fields.length>1? fieldChips('lcat',fields,ui.lcat) : ''}
     <div id="list" class="col" style="gap:10px">${libraryList()}</div></main>`;
 }
-/** 보관함에서 연 콘텐츠 */
+
+/* ── 프로필: 내 활동 · 내 자료 · 좋아요한 콘텐츠 · 설정 ── */
+function scrProfile(){
+  const mine=S.decks.filter(r=>r.origin==='mine').sort((a,b)=>b.createdAt-a.createdAt), liked=S.decks.filter(r=>r.liked).sort((a,b)=>b.updatedAt-a.updatedAt);
+  const stats=[['내 자료',mine.length],['좋아요',liked.length],['댓글',S.decks.reduce((n,r)=>n+r.comments.length,0)],['이해 완료',S.decks.filter(r=>r.memory.state==='understood').length]];
+  const list=ui.pview==='mine'? mine : liked;
+  const row=(a,ic,label)=>`<button class="mrow" data-act="${a}">${icon(ic)}<span>${label}</span>${icon('right','go')}</button>`;
+  return `<main class="scr" id="scr">
+    <div class="prof"><span class="pav">${charSvg('student-character','happy')}</span><div><b>나</b><p>아직 로그인이 연결되지 않아 이 기기의 사용자 한 명으로 저장돼요. 로그인이 연결되면 이름과 사진을 바꿀 수 있어요.</p></div></div>
+    <div class="stats">${stats.map(([l,n])=>`<div aria-label="${l} ${n}"><b>${n}</b><span>${l}</span></div>`).join('')}</div>
+    <div class="col" style="gap:8px"><div class="ihead"><h2>관심 분야</h2><button data-act="settings">바꾸기</button></div>
+      <div class="chips">${S.interests.map(c=>`<span class="tag line">${c}</span>`).join('')}</div></div>
+    <div class="tabs full two" role="group" aria-label="내 콘텐츠">${[['mine',`내 자료 ${mine.length}`],['liked',`좋아요 ${liked.length}`]].map(([k,l])=>`<button data-act="pview" data-v="${k}" aria-pressed="${ui.pview===k}">${l}</button>`).join('')}</div>
+    ${list.length? rowsHtml(list) : emptyBox(ui.pview==='mine'?'등록한 자료가 없어요':'좋아요한 콘텐츠가 없어요', ui.pview==='mine'?'아래 + 버튼으로 메모나 링크를 등록해 보세요.':'피드에서 카드 아래 하트를 누르면 여기에 모여요.', false)}
+    <div class="mlist box2">${row('settings','settings','설정')}${row('reonboard','review','관심 분야 다시 고르기')}</div></main>`;
+}
+/** 탐색 · 보관함 · 프로필에서 연 콘텐츠 */
 function viewerHtml(){
   const rec=S.decks.find(r=>r.id===ui.viewer); if (!rec) return '';
   return `<section class="viewer" role="dialog" aria-modal="true" aria-label="${esc(rec.title)}">
-    <header class="abar"><button class="ibtn" data-act="close-viewer" aria-label="보관함으로 돌아가기">${icon('left')}</button><h1>보관함</h1></header>
+    <header class="abar"><button class="ibtn" data-act="close-viewer" aria-label="뒤로 가기">${icon('left')}</button><h1>${TITLE[ui.tab]}</h1></header>
     <div class="reel">${post(rec,null)}</div></section>`;
 }
 
-/* ── 화면 5: 상세 메뉴 (바텀 시트) — 콘텐츠마다 있는 ⋯ 는 그 콘텐츠의 동작을, 머리의 ⋯ 는 앱 설정을 연다 ── */
+/* ── 설정 (프로필에서 연다) · 상세 메뉴 (콘텐츠의 ⋯ 로 연다) ── */
+const discoveryText = v => v===0? '관심 분야 밖의 콘텐츠는 피드에 보여 주지 않아요. 탐색에서 찾아볼 수 있어요.' : v>=100? '관심 분야 밖의 콘텐츠를 모두 피드에 섞어요.' : `피드의 약 ${v}%를 관심 분야 밖의 콘텐츠로 채워요.`;
 function settingsHtml(){
   const choice=(k,label,opts)=>`<div class="field"><span>${label}</span><div class="chips" role="group" aria-label="${label}">${opts.map(([v,l])=>`<button class="chip tall" data-act="pref" data-k="${k}" data-v="${v}" aria-pressed="${S.prefs[k]===v}">${l}</button>`).join('')}</div></div>`;
   const waiting=S.decks.filter(r=>visOf(r)==='shared'&&syncOf(r)!=='synced').length;
   return `
   <section class="set"><h3>관심 분야</h3><p class="h">고른 분야를 중심으로 피드를 구성해요. 하나 이상 골라 주세요.</p>
     <div class="chips" role="group" aria-label="관심 분야">${CATEGORIES.map(c=>`<button class="chip tall" data-act="interest" data-v="${c}" aria-pressed="${S.interests.includes(c)}">${c}</button>`).join('')}</div>
-    <div class="field"><span>새로운 분야 보여 주기</span><div class="chips" role="group" aria-label="새로운 분야 보여 주기">${[['off','안 함'],['some','가끔'],['often','자주']].map(([v,l])=>`<button class="chip tall" data-act="discovery" data-v="${v}" aria-pressed="${S.discovery===v}">${l}</button>`).join('')}</div></div></section>
+    <div class="slider"><label for="disc"><span>새로운 분야 비중</span><output id="disc-o">${S.discovery}%</output></label>
+      <input id="disc" type="range" min="0" max="100" step="10" value="${S.discovery}" aria-valuetext="${discoveryText(S.discovery)}">
+      <div class="ends"><span>관심 분야만</span><span>새로운 분야만</span></div><p class="desc" id="disc-d">${discoveryText(S.discovery)}</p></div></section>
   <section class="set"><h3>카드 만들기 선호</h3><p class="h">따로 정하지 않으면 분야에 맞는 연출을 자동으로 골라요. 카드 장수는 내용에 따라 달라집니다.</p>
     ${choice('difficulty','설명 분량',[['EASY','짧게'],['NORMAL','보통'],['DEEP','자세히']])}
     ${choice('tone','말투',[['FRIENDLY','친근하게'],['HUMOROUS','유머 있게'],['CONCISE','간결하게(만화 없이)']])}
@@ -1555,8 +1622,7 @@ function addHtml(d){
 }
 function menuHtml(rec, wrap){
   const row=(a,ic,label,on,extra='')=>`<button class="mrow" data-act="${a}" ${rec?`data-id="${rec.id}"`:''} ${extra} ${on?'aria-pressed="true"':''}>${icon(ic)}<span>${label}</span>${on?'<small>선택됨</small>':''}</button>`;
-  const app=`<div class="mlist">${row('settings','settings','설정')}${row('reonboard','review','관심 분야 다시 고르기')}</div>`;
-  if (!rec) return wrap('메뉴', app);
+  if (!rec) return '';
   const deck=currentDeck(rec), src=sourceOf(rec), i=Math.min(pos(rec.id),deck.cards.length-1), card=deck.cards[i], m=rec.memory, gen=(deck.meta&&deck.meta.generator)||'local', series=deck.meta&&deck.meta.series;
   const para = r => { const k=/-p(\d+)$/.exec(r); return k? k[1] : '?'; };
   const origin = simOf(deck)? '시뮬레이션 예시예요. 실제 자료의 내용이 아닙니다.'
@@ -1660,10 +1726,9 @@ function render(){
   const old=document.getElementById('scr'), top=old? old.scrollTop : 0;
   const tb=(k,l,ic)=>`<button class="tb" data-act="tab" data-v="${k}" ${ui.tab===k?'aria-current="page"':''}>${icon(ic)}<span>${l}</span></button>`;
   document.getElementById('root').innerHTML=`<div class="phone">${!S.interests? scrOnboarding() : `
-    <header class="abar"><h1>${ui.tab==='feed'?logo:''}${TITLE[ui.tab]}</h1>
-      <button class="ibtn" data-act="menu" aria-label="앱 메뉴">${icon('more')}</button></header>
-    ${ui.tab==='feed'? scrFeed() : scrLibrary()}
-    <nav class="tbar three" aria-label="주 메뉴">${tb('feed','피드','feed')}<button class="fab" data-act="add" aria-label="자료 등록">${icon('plus')}</button>${tb('library','보관함','library')}</nav>
+    <header class="abar"><h1>${ui.tab==='feed'?logo:''}${TITLE[ui.tab]}</h1></header>
+    ${({feed:scrFeed,explore:scrExplore,library:scrLibrary,profile:scrProfile})[ui.tab]()}
+    <nav class="tbar" aria-label="주 메뉴">${tb('feed','피드','feed')}${tb('explore','탐색','explore')}<button class="fab" data-act="add" aria-label="자료 등록">${icon('plus')}</button>${tb('library','보관함','library')}${tb('profile','프로필','profile')}</nav>
     ${ui.viewer?viewerHtml():''}
     ${ui.snack?`<div class="snack ${ui.snack.err?'err':''}" role="status"><span style="flex:1">${esc(ui.snack.msg)}</span><button data-act="dismiss">닫기</button></div>`:''}
     ${sheetHtml()}`}
@@ -1749,7 +1814,6 @@ const ACT={
   'close-sheet'(){ if (ui.busy) return false; ui.sheet=null; },
   open(d){ ui.viewer=d.id; ui.idx[d.id]=0; },
   'close-viewer'(){ ui.viewer=null; },
-  menu(){ openSheet({type:'menu',id:null}); return false; },
   more(d){ openSheet({type:'menu',id:d.id}); return false; },
   settings(){ openSheet({type:'settings'}); return false; },
   go(d){ moveCard(d.id,Number(d.v)); return false; },
@@ -1783,7 +1847,8 @@ const ACT={
   pref(d){ S.prefs[d.k]=d.v; save(); },
   interest(d){ const on=S.interests.includes(d.v); if (on&&S.interests.length===1){ say('관심 분야는 하나 이상 있어야 해요.',true); return; }
     S.interests=on? S.interests.filter(x=>x!==d.v) : [...S.interests,d.v]; save(); refreshFeed(); },
-  discovery(d){ S.discovery=d.v; save(); refreshFeed(); },
+  ecat(d){ ui.ecat=d.v; },
+  pview(d){ ui.pview=d.v; },
   'pick-type'(d){ const t=document.getElementById('ctitle'), b=document.getElementById('cbody'); ui.sheet={...ui.sheet,ctype:d.v,ctitle:t?t.value:null,cbody:b?b.value:null,error:null}; },
   async regen(d){
     const id=ui.sheet.id, rec=S.decks.find(r=>r.id===id), src=sourceOf(rec), [label,opts]=REGEN[d.v];
@@ -1840,10 +1905,13 @@ window.addEventListener('resize', syncScroll);
 document.addEventListener('input', e=>{
   const t=e.target;
   if (t.id==='q'){ ui.q=t.value; document.getElementById('list').innerHTML=libraryList(); }
+  else if (t.id==='eq'){ ui.eq=t.value; document.getElementById('elist').innerHTML=exploreList(); }
+  else if (t.id==='disc'){ const v=toDiscovery(t.value); document.getElementById('disc-o').textContent=v+'%'; document.getElementById('disc-d').textContent=discoveryText(v); t.setAttribute('aria-valuetext',discoveryText(v)); }
 });
 document.addEventListener('change', e=>{
   const t=e.target;
-  if (t.id==='pdfFile'&&t.files[0]){ const f=t.files[0]; const form=document.getElementById('addForm');
+  if (t.id==='disc'){ S.discovery=toDiscovery(t.value); save(); refreshFeed(); }
+  else if (t.id==='pdfFile'&&t.files[0]){ const f=t.files[0]; const form=document.getElementById('addForm');
     keepAddForm({file:f.name}); if (!ui.sheet.title) ui.sheet.title=f.name.replace(/\.[^.]+$/,''); render(); }
   else if (t.id==='importFile'&&t.files[0]){
     const f=t.files[0];
